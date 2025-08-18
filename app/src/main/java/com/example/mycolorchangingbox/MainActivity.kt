@@ -393,7 +393,16 @@ fun MyCounter() {
 fun MyMainPage() {
     val events = remember { mutableListOf<Event>() }
     events.addAll(getEvents())
-
+    Text(
+        text = "d",
+        modifier = Modifier
+            .background(Color.Magenta)
+            .fillMaxWidth()
+            .padding(10.dp),
+        fontSize = 24.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = Color.Yellow
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -432,12 +441,23 @@ fun MyMainPage() {
                     )
                     Image(
                         modifier = Modifier
-                            .padding(4.dp)
+                            .padding(0.dp)
+                            .fillMaxSize()
+                            .size(100.dp)
                             .background(Color.Magenta),
                         painter = painterResource(id =  event.iconPath),
                         contentDescription = "Mein Logo",
                     )
-
+                    Text (
+                        text = "k",
+                        modifier = Modifier
+                            .background(Color.Magenta)
+                            .padding(8.dp)
+                            .fillMaxSize(),
+                        fontSize = 6.sp,
+                        fontWeight = FontWeight.Thin,
+                        color = Color.Magenta
+                    )
                 }
             }
         }
