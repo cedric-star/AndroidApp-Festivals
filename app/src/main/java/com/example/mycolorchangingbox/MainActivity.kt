@@ -197,13 +197,13 @@ fun MyMainPage(db: MyDatabase) {
         modifier = Modifier
             .background(colorResource(R.color.main_background))
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(top = 30.dp),
         fontSize = 50.sp,
         fontWeight = FontWeight.SemiBold,
         color = colorResource(R.color.secondary_text)
     )
     LazyColumn(modifier = Modifier
-        .padding(top = 80.dp)
+        .padding(top = 100.dp)
         .fillMaxHeight()) {
         items(events) { event ->
             Card(
@@ -309,12 +309,43 @@ fun MyTickets(db: MyDatabase) {
     LaunchedEffect(Unit) {
         myTickets = db.ticketDao().getAll()
     }
-
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(colorResource(R.color.main_background))) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize().padding(top = 10.dp)
         ) {
-            items(myTickets) { ticket -> Text(ticket.price.toString())
+            items(myTickets) { ticket ->
+                Card(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth(),
+
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    val event = getEventByID(ticket.eventID)
+                    Text(
+                        text = event.title.toString(),
+                        modifier = Modifier
+                            .background(colorResource(R.color.background_primary))
+                            .padding(18.dp)
+                            .fillMaxSize(),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colorResource(R.color.primary_text)
+                    )
+                    Text(
+                        text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
+                        modifier = Modifier
+                            .background(colorResource(R.color.background_primary))
+                            .padding(18.dp)
+                            .fillMaxSize(),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colorResource(R.color.primary_text)
+                    )
+
+                }
 
             }
         }
