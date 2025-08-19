@@ -18,8 +18,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -80,6 +83,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.xmlpull.v1.XmlPullParser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     //DB Instanziieren
@@ -108,6 +113,7 @@ data class Event(
     val genre: String,
     val stage: Number,
     val iconPath: Int,
+    val id: Int
 )
 
 
@@ -274,90 +280,50 @@ fun getEvents(): List<Event> {
         description = "The new era of Rock'n Roll",
         genre = "Rock",
         stage = 1,
-        iconPath = R.drawable.b7
+        iconPath = R.drawable.b7,
+        id = 0
     ))
     return events
 }
-
+fun getEventByID(id: Int): Event {
+    for (event in getEvents()) {
+        if (event.id.equals(id)) return event
+    }
+    return Event(
+        title = TODO(),
+        date = TODO(),
+        time = TODO(),
+        description = TODO(),
+        genre = TODO(),
+        stage = TODO(),
+        iconPath = TODO(),
+        id = TODO()
+    )
+}
 
 @Composable
 fun MyTickets(db: MyDatabase) {
-    var myTickets: List<Ticket> = emptyList();
+    var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }
 
-
-    Button(
-        onClick = {
-            GlobalScope.launch {
-                myTickets = db.ticketDao().getAll()
-            }
-        },
-        modifier = Modifier.padding(8.dp)
-    ) {
-        Text("+", fontWeight = FontWeight.Bold, fontSize = 30.sp)
+    // Tickets automatisch laden wenn Screen erscheint
+    LaunchedEffect(Unit) {
+        myTickets = db.ticketDao().getAll()
     }
 
-    /*
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        var counter by remember { mutableIntStateOf(0) }
-        var inputValue by remember { mutableStateOf("") }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(myTickets) { ticket -> Text(ticket.price.toString())
 
-        Text(
-            text = "Zählerstand: $counter",
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.headlineMedium
-        )
-        Row {
-            Button(
-                onClick = { counter++ },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text("+", fontWeight = FontWeight.Bold, fontSize = 30.sp)
-            }
-            Button(
-                onClick = { counter-- },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text("-", fontWeight = FontWeight.Bold, fontSize = 30.sp)
             }
         }
+        // Restlicher Content hier...
+    }
 
 
-
-        OutlinedTextField(
-            value = "$inputValue",
-            onValueChange = { inputValue = it },
-            label = { Text("Wert zum addieren") },
-            modifier = Modifier.padding(8.dp)
-        )
-
-        Button(
-            onClick = {
-                val numberToAdd = inputValue.toIntOrNull() ?: 0
-                counter += numberToAdd
-                inputValue = "" // Feld leeren nach dem Hinzufügen
-            },
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("Benutzerwert addieren")
-        }
-
-        Button(
-            onClick = {
-                counter = 0
-            },
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("auf 0 zurücksetzen")
-        }
-
-    }*/
 }
-
+//./>?<,.|":;'\}{=-
 //Eintrag in Datenbank (ein Ticket)
 @Entity(tableName = "tickets")
 data class Ticket(
