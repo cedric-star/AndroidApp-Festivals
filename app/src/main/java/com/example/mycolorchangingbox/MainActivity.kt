@@ -239,6 +239,7 @@ fun MyMainPage() {
     }
 }
 
+
 fun getEvents(): List<Event> {
     val events = mutableListOf<Event>()
     events.add( Event(
