@@ -1,5 +1,7 @@
 package com.example.mycolorchangingbox
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import android.content.Context
 import androidx.compose.material3.Snackbar
 import android.os.Bundle
@@ -66,14 +68,34 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.Update
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.xmlpull.v1.XmlPullParser
 
 class MainActivity : ComponentActivity() {
+    //DB Instanziieren
+    private lateinit var db: MyDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //initialisieren der DB
+        db = Room.databaseBuilder(
+            applicationContext,
+            MyDatabase::class.java, "tickets"
+        ).build()
+
         setContent {
-            MainApp()
+            MainApp(db = db)
         }
     }
 }
@@ -90,9 +112,9 @@ data class Event(
 
 
 
-@Preview
+
 @Composable
-fun MainApp() {
+fun MainApp(db: MyDatabase) {
     val navController = rememberNavController()
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -102,8 +124,8 @@ fun MainApp() {
                 startDestination = "myTickets",//muss auf myMainPage gesetzt werden
                 modifier = Modifier.weight(1f)
             ) {
-                composable("myMainPage") { MyMainPage() }
-                composable("myTickets") { MyTickets() }
+                composable("myMainPage") { MyMainPage(db) }
+                composable("myTickets") { MyTickets(db) }
                 composable("snackBar") { MinimalSnackbar() }
                 composable("mylist") { MyList() }
                 composable("mybilder") { MyBilder() }
@@ -160,7 +182,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 }
 
 @Composable
-fun MyMainPage() {
+fun MyMainPage(db: MyDatabase) {
     val events = remember { mutableListOf<Event>() }
     events.addAll(getEvents())
     Text(
@@ -227,7 +249,11 @@ fun MyMainPage() {
                     color = Color.Transparent
                 )
                 Button(
-                    onClick = {},
+                    onClick = {
+                        GlobalScope.launch {
+                            db.ticketDao().insert(Ticket(eventID = 0, price = 29.99f))
+                        }
+                    },
                     modifier = Modifier.fillMaxSize().padding(0.dp).background(colorResource(R.color.background_secondary)),
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.background_secondary))
                 ) {
@@ -238,7 +264,6 @@ fun MyMainPage() {
         }
     }
 }
-
 
 fun getEvents(): List<Event> {
     val events = mutableListOf<Event>()
@@ -255,9 +280,23 @@ fun getEvents(): List<Event> {
 }
 
 
-@Preview
 @Composable
-fun MyTickets() {/*
+fun MyTickets(db: MyDatabase) {
+    var myTickets: List<Ticket> = emptyList();
+
+
+    Button(
+        onClick = {
+            GlobalScope.launch {
+                myTickets = db.ticketDao().getAll()
+            }
+        },
+        modifier = Modifier.padding(8.dp)
+    ) {
+        Text("+", fontWeight = FontWeight.Bold, fontSize = 30.sp)
+    }
+
+    /*
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -319,8 +358,38 @@ fun MyTickets() {/*
     }*/
 }
 
+//Eintrag in Datenbank (ein Ticket)
+@Entity(tableName = "tickets")
+data class Ticket(
+    @PrimaryKey(autoGenerate = true) val id: Long =0,
+    val eventID: Int,
+    val price: Float
+)
+
+//Funktionen für Datenbanknutzung
+@Dao
+interface TicketDao {
+    @Insert
+    suspend fun insert(ticket: Ticket): Long
+
+    @Query("SELECT * FROM tickets")
+    suspend fun getAll(): List<Ticket>
+
+    @Query("DELETE FROM tickets WHERE id = :id")
+    suspend fun deleteByID(id: Long)
+}
+
+//Datenbank Klasse
+@Database(entities = [Ticket::class], version = 1)
+abstract class MyDatabase: RoomDatabase() {
+    abstract fun ticketDao(): TicketDao
+}
 
 
+
+
+
+//--------------
 @Composable
 fun MyBilder() {/*
     Box (modifier = Modifier.fillMaxSize().background(Color.Cyan)) {
