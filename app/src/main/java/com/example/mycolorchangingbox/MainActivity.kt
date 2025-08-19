@@ -5,6 +5,7 @@ import androidx.compose.material3.Snackbar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.ColorRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -52,8 +54,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,10 +86,11 @@ data class Event(
     val genre: String,
     val stage: Number,
     val iconPath: Int,
-
 )
 
-//beinhaltet NavBar
+
+
+@Preview
 @Composable
 fun MainApp() {
     val navController = rememberNavController()
@@ -94,11 +99,11 @@ fun MainApp() {
         Column {
             NavHost(
                 navController = navController,
-                startDestination = "myMainPage",
+                startDestination = "myTickets",//muss auf myMainPage gesetzt werden
                 modifier = Modifier.weight(1f)
             ) {
                 composable("myMainPage") { MyMainPage() }
-                composable("counter") { MyCounter() }
+                composable("myTickets") { MyTickets() }
                 composable("snackBar") { MinimalSnackbar() }
                 composable("mylist") { MyList() }
                 composable("mybilder") { MyBilder() }
@@ -113,7 +118,7 @@ fun MainApp() {
 //stellt Objekte für Screen/Ansicht bereit
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object MainPage : Screen("myMainPage", "Main", Icons.Default.Home)
-    object Counter : Screen("counter", "Buy Now", Icons.Default.Star)
+    object Counter : Screen("myTickets", "Buy Now", Icons.Default.Star)
     object SnackBar : Screen("snackBar", "Nachricht", Icons.Default.Notifications)
     object MyList : Screen("mylist", "My Tickets", Icons.Default.PlayArrow)
     object MyBilder : Screen("mybilder", "About", Icons.Default.ThumbUp)
@@ -133,11 +138,14 @@ fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar {
+    NavigationBar(
+        contentColor = colorResource(R.color.secondary_text),//warum macht das nichts??
+        containerColor = colorResource(R.color.background_secondary)
+    ) {
         items.forEach { screen ->
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.title) },
-                label = { Text(screen.title) },
+                icon = { Icon(screen.icon, contentDescription = screen.title, tint = colorResource(R.color.secondary_text)) },
+                label = { Text(screen.title, color = colorResource(R.color.secondary_text)) },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
@@ -145,13 +153,175 @@ fun BottomNavigationBar(navController: NavHostController) {
                         restoreState = true
                     }
                 }
+
             )
         }
     }
 }
 
 @Composable
-fun MyBilder() {
+fun MyMainPage() {
+    val events = remember { mutableListOf<Event>() }
+    events.addAll(getEvents())
+    Text(
+        textAlign = TextAlign.Center,
+        text = "Visit Our Acts!!!",
+        modifier = Modifier
+            .background(colorResource(R.color.main_background))
+            .fillMaxWidth()
+            .padding(20.dp),
+        fontSize = 50.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = colorResource(R.color.secondary_text)
+    )
+    LazyColumn(modifier = Modifier
+        .padding(top = 80.dp)
+        .fillMaxHeight()) {
+        items(events) { event ->
+            Card(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .fillMaxWidth(),
+
+                elevation = CardDefaults.cardElevation(4.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = event.title,
+                    modifier = Modifier
+                        .background(colorResource(R.color.background_primary))
+                        .padding(16.dp)
+                        .fillMaxSize(),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.primary_text)
+                )
+                Text(
+                    text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
+                    modifier = Modifier
+                        .background(colorResource(R.color.background_primary))
+                        .padding(18.dp)
+                        .fillMaxSize(),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorResource(R.color.primary_text)
+                )
+                Image(
+                    modifier = Modifier
+                        .padding(0.dp)
+                        .fillMaxSize()
+                        .size(100.dp)
+                        .background(colorResource(R.color.background_primary)),
+                    painter = painterResource(id =  event.iconPath),
+                    contentDescription = "MyData",
+                )
+                Text (
+                    text = "k",
+                    modifier = Modifier
+                        .background(colorResource(R.color.background_primary))
+                        .padding(8.dp, bottom = 0.dp)
+                        .fillMaxSize(),
+                    fontSize = 6.sp,
+                    fontWeight = FontWeight.Thin,
+                    color = Color.Transparent
+                )
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxSize().padding(0.dp).background(colorResource(R.color.background_secondary)),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.background_secondary))
+                ) {
+                    Text("BuyNow", color = colorResource(R.color.primary_text), fontWeight = FontWeight.Bold, fontSize = 30.sp)
+                }
+            }
+
+        }
+    }
+}
+
+fun getEvents(): List<Event> {
+    val events = mutableListOf<Event>()
+    events.add( Event(
+        title = "RoggnRollerrudi",
+        date = "23.11.2025",
+        time = "19:00",
+        description = "The new era of Rock'n Roll",
+        genre = "Rock",
+        stage = 1,
+        iconPath = R.drawable.b7
+    ))
+    return events
+}
+
+
+@Preview
+@Composable
+fun MyTickets() {/*
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        var counter by remember { mutableIntStateOf(0) }
+        var inputValue by remember { mutableStateOf("") }
+
+        Text(
+            text = "Zählerstand: $counter",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Row {
+            Button(
+                onClick = { counter++ },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("+", fontWeight = FontWeight.Bold, fontSize = 30.sp)
+            }
+            Button(
+                onClick = { counter-- },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("-", fontWeight = FontWeight.Bold, fontSize = 30.sp)
+            }
+        }
+
+
+
+        OutlinedTextField(
+            value = "$inputValue",
+            onValueChange = { inputValue = it },
+            label = { Text("Wert zum addieren") },
+            modifier = Modifier.padding(8.dp)
+        )
+
+        Button(
+            onClick = {
+                val numberToAdd = inputValue.toIntOrNull() ?: 0
+                counter += numberToAdd
+                inputValue = "" // Feld leeren nach dem Hinzufügen
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Benutzerwert addieren")
+        }
+
+        Button(
+            onClick = {
+                counter = 0
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("auf 0 zurücksetzen")
+        }
+
+    }*/
+}
+
+
+
+@Composable
+fun MyBilder() {/*
     Box (modifier = Modifier.fillMaxSize().background(Color.Cyan)) {
         // Beispiel-Daten
         val horizontalPics = listOf(
@@ -252,11 +422,10 @@ fun MyBilder() {
             }
         }
     }
-
+*/
 }
-
 @Composable
-fun MyList() {
+fun MyList() {/*
     Box (modifier = Modifier.fillMaxSize().background(Color.Cyan)) {
         // Beispiel-Daten
         val horizontalWords = listOf(
@@ -322,166 +491,10 @@ fun MyList() {
                 }
             }
         }
-    }
+    }*/
 }
-
 @Composable
-fun MyCounter() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        var counter by remember { mutableIntStateOf(0) }
-        var inputValue by remember { mutableStateOf("") }
-
-        Text(
-            text = "Zählerstand: $counter",
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.headlineMedium
-        )
-        Row {
-            Button(
-                onClick = { counter++ },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text("+", fontWeight = FontWeight.Bold, fontSize = 30.sp)
-            }
-            Button(
-                onClick = { counter-- },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text("-", fontWeight = FontWeight.Bold, fontSize = 30.sp)
-            }
-        }
-
-
-
-        OutlinedTextField(
-            value = "$inputValue",
-            onValueChange = { inputValue = it },
-            label = { Text("Wert zum addieren") },
-            modifier = Modifier.padding(8.dp)
-        )
-
-        Button(
-            onClick = {
-                val numberToAdd = inputValue.toIntOrNull() ?: 0
-                counter += numberToAdd
-                inputValue = "" // Feld leeren nach dem Hinzufügen
-            },
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("Benutzerwert addieren")
-        }
-
-        Button(
-            onClick = {
-                counter = 0
-            },
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("auf 0 zurücksetzen")
-        }
-
-    }
-}
-
-@Preview
-@Composable
-fun MyMainPage() {
-    val events = remember { mutableListOf<Event>() }
-    events.addAll(getEvents())
-    Text(
-        text = "d",
-        modifier = Modifier
-            .background(Color.Magenta)
-            .fillMaxWidth()
-            .padding(10.dp),
-        fontSize = 24.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = Color.Yellow
-    )
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxHeight()) {
-            items(events) { event ->
-                Card(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(),
-
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = event.title,
-                        modifier = Modifier
-                            .background(Color.Magenta)
-                            .padding(16.dp)
-                            .fillMaxSize(),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Yellow
-                    )
-                    Text(
-                        text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
-                        modifier = Modifier
-                            .background(Color.Magenta)
-                            .padding(18.dp)
-                            .fillMaxSize(),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Yellow
-                    )
-                    Image(
-                        modifier = Modifier
-                            .padding(0.dp)
-                            .fillMaxSize()
-                            .size(100.dp)
-                            .background(Color.Magenta),
-                        painter = painterResource(id =  event.iconPath),
-                        contentDescription = "Mein Logo",
-                    )
-                    Text (
-                        text = "k",
-                        modifier = Modifier
-                            .background(Color.Magenta)
-                            .padding(8.dp)
-                            .fillMaxSize(),
-                        fontSize = 6.sp,
-                        fontWeight = FontWeight.Thin,
-                        color = Color.Magenta
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-//liest json aus
-fun getEvents(): List<Event> {
-    val events = mutableListOf<Event>()
-    events.add( Event(
-        title = "RoggnRollerrudi",
-        date = "23.11.2025",
-        time = "19:00",
-        description = "The new era of Rock'n Roll",
-        genre = "Rock",
-        stage = 1,
-        iconPath = R.drawable.b7
-    ))
-    return events
-}
-
-@Composable
-fun MinimalSnackbar() {
+fun MinimalSnackbar() {/*
     var show by remember { mutableStateOf(false) }
 
     Column {
@@ -496,5 +509,5 @@ fun MinimalSnackbar() {
             }
             Snackbar { Text("Fertig!") }
         }
-    }
+    }*/
 }
