@@ -146,8 +146,8 @@ fun MainApp(db: MyDatabase) {
 
 //stellt Objekte für Screen/Ansicht bereit
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object MainPage : Screen("myMainPage", "Main", Icons.Default.Home)
-    object Tickets : Screen("myTickets", "Buy Now", Icons.Default.Star)
+    object MainPage : Screen("myMainPage", "Acts", Icons.Default.Home)
+    object Tickets : Screen("myTickets", "Tickets", Icons.Default.Star)
     object About : Screen("about", "Über uns", Icons.Default.ThumbUp)
 }
 
@@ -349,19 +349,82 @@ fun MyTickets(db: MyDatabase) {
     Box(modifier = Modifier
         .fillMaxSize()
         .background(colorResource(R.color.main_background))) {
-        Button(onClick = {
-            GlobalScope.launch {
-                db.ticketDao().deleteAll()
-            }
-        }) {
-            Text("alle loeschen")
-        }
+
+        Text(
+            textAlign = TextAlign.Center,
+            text = "Meine Tickets",
+            modifier = Modifier
+                .background(colorResource(R.color.main_background))
+                .fillMaxWidth()
+                .padding(top = 10.dp),
+            fontSize = 50.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colorResource(R.color.secondary_text)
+        )
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 30.dp)
+                .padding(top = 80.dp)
         ) {
             items(myTickets) { ticket ->
+                var showStrDialog by remember { mutableStateOf(false) }
+                if (showStrDialog) {
+                    AlertDialog(
+                        containerColor = colorResource(R.color.background_secondary),
+                        modifier = Modifier.background(colorResource(R.color.background_secondary)),
+                        onDismissRequest = { showStrDialog = false },
+                        title = { Text(
+                            "Ticket Stornieren!",
+                            color = colorResource(R.color.secondary_text),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 30.sp,
+                            modifier = Modifier.background(colorResource(R.color.background_secondary)),
+
+                            ) },
+
+                        text = {
+                            Column {
+                                val evt = getEventByID(ticket.eventID)
+                                Text(
+                                    text = "Wollen sie wirklich das Ticket zum Auftritt von ${evt.title} stornieren?" +
+                                            "\nSie erhalten ${ticket.price}",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorResource(R.color.secondary_text),
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                        },
+
+
+
+
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    GlobalScope.launch {
+                                        db.ticketDao().deleteByID(ticket.id)
+                                        myTickets = db.ticketDao().getAll()
+                                    }
+                                    showStrDialog = false
+
+                                }
+                            )
+                            {
+                                Text("Stornieren")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {showStrDialog = false}) {
+                                Text("Abbrechen")
+                            }
+                        }
+
+
+                    )
+                }
                 Card(
                     modifier = Modifier
                         .padding(10.dp)
@@ -377,7 +440,7 @@ fun MyTickets(db: MyDatabase) {
                             .background(colorResource(R.color.background_primary))
                             .padding(18.dp)
                             .fillMaxSize(),
-                        fontSize = 22.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Medium,
                         color = colorResource(R.color.primary_text)
                     )
@@ -387,10 +450,26 @@ fun MyTickets(db: MyDatabase) {
                             .background(colorResource(R.color.background_primary))
                             .padding(18.dp)
                             .fillMaxSize(),
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = colorResource(R.color.primary_text)
                     )
+
+                    TextButton(
+                        modifier = Modifier.fillMaxWidth().background(colorResource(R.color.background_secondary)),
+                        onClick = {
+                            GlobalScope.launch {
+                                showStrDialog = true
+                                myTickets = db.ticketDao().getAll()
+                            }
+                        }
+                    ) {
+                        Text("Stornieren",
+                            color = colorResource(R.color.primary_text),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 30.sp)
+                    }
+
                 }
             }
         }
