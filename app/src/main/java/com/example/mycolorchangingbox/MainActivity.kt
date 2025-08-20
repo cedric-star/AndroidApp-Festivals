@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
@@ -39,6 +41,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -66,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -113,7 +117,8 @@ data class Event(
     val genre: String,
     val stage: Number,
     val iconPath: Int,
-    val id: Int
+    val id: Int,
+    val price: Float
 )
 
 
@@ -127,13 +132,12 @@ fun MainApp(db: MyDatabase) {
         Column {
             NavHost(
                 navController = navController,
-                startDestination = "myTickets",//muss auf myMainPage gesetzt werden
+                startDestination = "myMainPage",//muss auf myMainPage gesetzt werden
                 modifier = Modifier.weight(1f)
             ) {
                 composable("myMainPage") { MyMainPage(db) }
                 composable("myTickets") { MyTickets(db) }
                 composable("snackBar") { MinimalSnackbar() }
-                composable("mylist") { MyList() }
                 composable("mybilder") { MyBilder() }
             }
 
@@ -148,7 +152,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object MainPage : Screen("myMainPage", "Main", Icons.Default.Home)
     object Counter : Screen("myTickets", "Buy Now", Icons.Default.Star)
     object SnackBar : Screen("snackBar", "Nachricht", Icons.Default.Notifications)
-    object MyList : Screen("mylist", "My Tickets", Icons.Default.PlayArrow)
     object MyBilder : Screen("mybilder", "About", Icons.Default.ThumbUp)
 }
 
@@ -159,7 +162,6 @@ fun BottomNavigationBar(navController: NavHostController) {
         Screen.MainPage,
         Screen.Counter,
         Screen.SnackBar,
-        Screen.MyList,
         Screen.MyBilder
     )
 
@@ -181,7 +183,6 @@ fun BottomNavigationBar(navController: NavHostController) {
                         restoreState = true
                     }
                 }
-
             )
         }
     }
@@ -193,7 +194,7 @@ fun MyMainPage(db: MyDatabase) {
     events.addAll(getEvents())
     Text(
         textAlign = TextAlign.Center,
-        text = "Visit Our Acts!!!",
+        text = "Unsere Auftritte",
         modifier = Modifier
             .background(colorResource(R.color.main_background))
             .fillMaxWidth()
@@ -202,10 +203,62 @@ fun MyMainPage(db: MyDatabase) {
         fontWeight = FontWeight.SemiBold,
         color = colorResource(R.color.secondary_text)
     )
-    LazyColumn(modifier = Modifier
-        .padding(top = 100.dp)
-        .fillMaxHeight()) {
+    LazyColumn(
+        modifier = Modifier
+            .padding(top = 100.dp)
+            .fillMaxHeight()
+    ) {
         items(events) { event ->
+            var buyTicketDialog by remember { mutableStateOf(false) }
+            if (buyTicketDialog) {
+                AlertDialog(
+                    containerColor = colorResource(R.color.background_secondary),
+                    modifier = Modifier.background(colorResource(R.color.background_secondary)),
+                    onDismissRequest = { buyTicketDialog = false },
+                    title = { Text(
+                        "Ticket Kaufen!",
+                        color = colorResource(R.color.secondary_text),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp,
+                        modifier = Modifier.background(colorResource(R.color.background_secondary)),
+
+                    ) },
+                    text = {
+                        Text(
+                            text = "Ein Ticket für ${event.title} am ${event.date} (${event.time}Uhr)",
+                            modifier = Modifier
+                                .background(colorResource(R.color.background_secondary))
+                                .padding(18.dp)
+                                .fillMaxSize(),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.secondary_text)
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                GlobalScope.launch {
+                                    db.ticketDao().insert(Ticket(eventID = event.id, price = event.price))
+                                }
+                                buyTicketDialog = false
+
+                            })
+                        {
+                            Text("Jetzt Kaufen")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {buyTicketDialog = false}) {
+                            Text("Abbrechen")
+                        }
+                    }
+
+
+                )
+            }
+
             Card(
                 modifier = Modifier
                     .padding(10.dp)
@@ -226,7 +279,7 @@ fun MyMainPage(db: MyDatabase) {
                     color = colorResource(R.color.primary_text)
                 )
                 Text(
-                    text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
+                    text = "Wann? " + event.date + ", " + event.time + " Uhr\nWo? " + event.stage + "\nGenre? " + event.genre + "\n" + event.description,
                     modifier = Modifier
                         .background(colorResource(R.color.background_primary))
                         .padding(18.dp)
@@ -241,10 +294,10 @@ fun MyMainPage(db: MyDatabase) {
                         .fillMaxSize()
                         .size(100.dp)
                         .background(colorResource(R.color.background_primary)),
-                    painter = painterResource(id =  event.iconPath),
+                    painter = painterResource(id = event.iconPath),
                     contentDescription = "MyData",
                 )
-                Text (
+                Text(
                     text = "k",
                     modifier = Modifier
                         .background(colorResource(R.color.background_primary))
@@ -256,20 +309,30 @@ fun MyMainPage(db: MyDatabase) {
                 )
                 Button(
                     onClick = {
-                        GlobalScope.launch {
+                        /*GlobalScope.launch {
                             db.ticketDao().insert(Ticket(eventID = 0, price = 29.99f))
-                        }
+                        }*/
+                        buyTicketDialog = true
                     },
-                    modifier = Modifier.fillMaxSize().padding(0.dp).background(colorResource(R.color.background_secondary)),
+                    modifier = Modifier.fillMaxSize().padding(0.dp)
+                        .background(colorResource(R.color.background_secondary)),
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.background_secondary))
                 ) {
-                    Text("BuyNow", color = colorResource(R.color.primary_text), fontWeight = FontWeight.Bold, fontSize = 30.sp)
+                    Text(
+                        "Jetzt Kaufen",
+                        color = colorResource(R.color.primary_text),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp
+                    )
                 }
             }
 
         }
     }
 }
+
+
+
 
 fun getEvents(): List<Event> {
     val events = mutableListOf<Event>()
@@ -281,7 +344,8 @@ fun getEvents(): List<Event> {
         genre = "Rock",
         stage = 1,
         iconPath = R.drawable.b7,
-        id = 0
+        id = 0,
+        price = 29.99f
     ))
     return events
 }
@@ -297,7 +361,8 @@ fun getEventByID(id: Int): Event {
         genre = TODO(),
         stage = TODO(),
         iconPath = TODO(),
-        id = TODO()
+        id = TODO(),
+        price = TODO()
     )
 }
 
@@ -310,9 +375,16 @@ fun MyTickets(db: MyDatabase) {
         myTickets = db.ticketDao().getAll()
     }
     Box(modifier = Modifier.fillMaxSize().background(colorResource(R.color.main_background))) {
+        Button(onClick = {
+            GlobalScope.launch {
+                db.ticketDao().deleteAll()
+            }
+        }) {
+            Text("alle loeschen")
+        }
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize().padding(top = 10.dp)
+                .fillMaxSize().padding(top = 30.dp)
         ) {
             items(myTickets) { ticket ->
                 Card(
@@ -344,15 +416,10 @@ fun MyTickets(db: MyDatabase) {
                         fontWeight = FontWeight.Medium,
                         color = colorResource(R.color.primary_text)
                     )
-
                 }
-
             }
         }
-        // Restlicher Content hier...
     }
-
-
 }
 //./>?<,.|":;'\}{=-
 //Eintrag in Datenbank (ein Ticket)
@@ -374,6 +441,9 @@ interface TicketDao {
 
     @Query("DELETE FROM tickets WHERE id = :id")
     suspend fun deleteByID(id: Long)
+
+    @Query("DELETE FROM tickets")
+    suspend fun deleteAll()
 }
 
 //Datenbank Klasse
@@ -490,75 +560,6 @@ fun MyBilder() {/*
         }
     }
 */
-}
-@Composable
-fun MyList() {/*
-    Box (modifier = Modifier.fillMaxSize().background(Color.Cyan)) {
-        // Beispiel-Daten
-        val horizontalWords = listOf(
-            "Apfel",
-            "MarkusMarkus",
-            "Kirsche",
-            "Dattel",
-            "Erdbeere",
-            "deindad",
-            "du",
-            "CasaBonita",
-            "580 Dong"
-        )
-        val listState = rememberLazyListState()
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .background(color = Color.Cyan),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card {
-                Text(
-                    text = "Vertikale Wortliste",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .background(color = Color.Yellow)
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Magenta
-                )
-            }
-
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxHeight()
-            ) {
-                items(horizontalWords) { word ->
-                    Card(
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
-
-                        elevation = CardDefaults.cardElevation(4.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = word,
-                            modifier = Modifier
-                                .background(Color.Magenta)
-                                .padding(16.dp)
-                                .fillMaxSize(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Yellow
-                        )
-
-                    }
-                }
-            }
-        }
-    }*/
 }
 @Composable
 fun MinimalSnackbar() {/*
