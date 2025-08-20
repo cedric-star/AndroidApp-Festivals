@@ -122,8 +122,6 @@ data class Event(
 )
 
 
-
-
 @Composable
 fun MainApp(db: MyDatabase) {
     val navController = rememberNavController()
@@ -137,8 +135,7 @@ fun MainApp(db: MyDatabase) {
             ) {
                 composable("myMainPage") { MyMainPage(db) }
                 composable("myTickets") { MyTickets(db) }
-                composable("snackBar") { MinimalSnackbar() }
-                composable("mybilder") { MyBilder() }
+                composable("about") { About() }
             }
 
             // Bottom Navigation
@@ -150,9 +147,8 @@ fun MainApp(db: MyDatabase) {
 //stellt Objekte für Screen/Ansicht bereit
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object MainPage : Screen("myMainPage", "Main", Icons.Default.Home)
-    object Counter : Screen("myTickets", "Buy Now", Icons.Default.Star)
-    object SnackBar : Screen("snackBar", "Nachricht", Icons.Default.Notifications)
-    object MyBilder : Screen("mybilder", "About", Icons.Default.ThumbUp)
+    object Tickets : Screen("myTickets", "Buy Now", Icons.Default.Star)
+    object About : Screen("about", "Über uns", Icons.Default.ThumbUp)
 }
 
 //eigentliche NavBar, wird in MainApp() aufgerufen
@@ -160,10 +156,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         Screen.MainPage,
-        Screen.Counter,
-        Screen.SnackBar,
-        Screen.MyBilder
-    )
+        Screen.Tickets,
+        Screen.About)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -174,7 +168,12 @@ fun BottomNavigationBar(navController: NavHostController) {
     ) {
         items.forEach { screen ->
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.title, tint = colorResource(R.color.secondary_text)) },
+                icon = {
+                    Icon(
+                        screen.icon,
+                        //modifier = Modifier.background(colorResource(R.color.primary_text)),
+                        contentDescription = screen.title,
+                        tint = colorResource(R.color.secondary_text)) },
                 label = { Text(screen.title, color = colorResource(R.color.secondary_text)) },
                 selected = currentRoute == screen.route,
                 onClick = {
@@ -194,7 +193,7 @@ fun MyMainPage(db: MyDatabase) {
     events.addAll(getEvents())
     Text(
         textAlign = TextAlign.Center,
-        text = "Unsere Auftritte",
+        text = "Unsere Acts",
         modifier = Modifier
             .background(colorResource(R.color.main_background))
             .fillMaxWidth()
@@ -224,16 +223,21 @@ fun MyMainPage(db: MyDatabase) {
 
                     ) },
                     text = {
-                        Text(
-                            text = "Ein Ticket für ${event.title} am ${event.date} (${event.time}Uhr)",
-                            modifier = Modifier
-                                .background(colorResource(R.color.background_secondary))
-                                .padding(18.dp)
-                                .fillMaxSize(),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = colorResource(R.color.secondary_text)
-                        )
+                        Column {
+                            Text(
+                                text = "Ein Ticket für ${event.title} am ${event.date} (${event.time}Uhr)",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colorResource(R.color.secondary_text),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Text(
+                                text = "Preis: ${event.price}",
+                                color = colorResource(R.color.secondary_text),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 30.sp
+                            )
+                        }
                     },
                     confirmButton = {
                         TextButton(
@@ -279,7 +283,7 @@ fun MyMainPage(db: MyDatabase) {
                     color = colorResource(R.color.primary_text)
                 )
                 Text(
-                    text = "Wann? " + event.date + ", " + event.time + " Uhr\nWo? " + event.stage + "\nGenre? " + event.genre + "\n" + event.description,
+                    text = "Wann? " + event.date + ", " + event.time + " Uhr\nWo? Stage " + event.stage + "\nGenre? " + event.genre + "\n" + event.description,
                     modifier = Modifier
                         .background(colorResource(R.color.background_primary))
                         .padding(18.dp)
@@ -314,7 +318,9 @@ fun MyMainPage(db: MyDatabase) {
                         }*/
                         buyTicketDialog = true
                     },
-                    modifier = Modifier.fillMaxSize().padding(0.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(0.dp)
                         .background(colorResource(R.color.background_secondary)),
                     colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.background_secondary))
                 ) {
@@ -332,40 +338,6 @@ fun MyMainPage(db: MyDatabase) {
 }
 
 
-
-
-fun getEvents(): List<Event> {
-    val events = mutableListOf<Event>()
-    events.add( Event(
-        title = "RoggnRollerrudi",
-        date = "23.11.2025",
-        time = "19:00",
-        description = "The new era of Rock'n Roll",
-        genre = "Rock",
-        stage = 1,
-        iconPath = R.drawable.b7,
-        id = 0,
-        price = 29.99f
-    ))
-    return events
-}
-fun getEventByID(id: Int): Event {
-    for (event in getEvents()) {
-        if (event.id.equals(id)) return event
-    }
-    return Event(
-        title = TODO(),
-        date = TODO(),
-        time = TODO(),
-        description = TODO(),
-        genre = TODO(),
-        stage = TODO(),
-        iconPath = TODO(),
-        id = TODO(),
-        price = TODO()
-    )
-}
-
 @Composable
 fun MyTickets(db: MyDatabase) {
     var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }
@@ -374,7 +346,9 @@ fun MyTickets(db: MyDatabase) {
     LaunchedEffect(Unit) {
         myTickets = db.ticketDao().getAll()
     }
-    Box(modifier = Modifier.fillMaxSize().background(colorResource(R.color.main_background))) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(colorResource(R.color.main_background))) {
         Button(onClick = {
             GlobalScope.launch {
                 db.ticketDao().deleteAll()
@@ -384,7 +358,8 @@ fun MyTickets(db: MyDatabase) {
         }
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize().padding(top = 30.dp)
+                .fillMaxSize()
+                .padding(top = 30.dp)
         ) {
             items(myTickets) { ticket ->
                 Card(
@@ -452,115 +427,55 @@ abstract class MyDatabase: RoomDatabase() {
     abstract fun ticketDao(): TicketDao
 }
 
+fun getEvents(): List<Event> {
+    val events = mutableListOf<Event>()
+    events.add( Event(
+        title = "Limp Schisskit",
+        date = "22.11.2025",
+        time = "20:00",
+        description = "Scheisse geht das ab, Abriss pur!!!",
+        genre = "Hard-Rock",
+        stage = 2,
+        iconPath = R.drawable.b8,
+        id = 0,
+        price = 24.99f
+    ))
+    events.add( Event(
+        title = "RoggnRoller Jonny",
+        date = "23.11.2025",
+        time = "19:00",
+        description = "The new era of Rock'n Roll",
+        genre = "Rock",
+        stage = 1,
+        iconPath = R.drawable.b7,
+        id = 1,
+        price = 29.99f
+    ))
+    return events
+}
+fun getEventByID(id: Int): Event {
+    for (event in getEvents()) {
+        if (event.id.equals(id)) return event
+    }
+    return Event(
+        title = TODO(),
+        date = TODO(),
+        time = TODO(),
+        description = TODO(),
+        genre = TODO(),
+        stage = TODO(),
+        iconPath = TODO(),
+        id = TODO(),
+        price = TODO()
+    )
+}
 
-
-
+@Composable
+fun About() {
+    Text("DELETE FROM tickets WHERE id = :id")
+}
 
 //--------------
-@Composable
-fun MyBilder() {/*
-    Box (modifier = Modifier.fillMaxSize().background(Color.Cyan)) {
-        // Beispiel-Daten
-        val horizontalPics = listOf(
-            R.drawable.b1,
-            R.drawable.b2,
-            R.drawable.b3,
-            R.drawable.b4,
-            R.drawable.b5,
-            R.drawable.b6,
-            R.drawable.b7,
-            R.drawable.b8,
-            R.drawable.b9,
-            R.drawable.b10,
-            R.drawable.b11
-            )
-        val listState = rememberLazyListState()
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .background(color = Color.Transparent),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card {
-                Text(
-                    text = "MyBildList580Dong",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .background(color = Color.Yellow)
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Magenta
-                )
-            }
-
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxHeight()
-            ) {
-                items(horizontalPics) { img ->
-                    var showDialog by remember { mutableStateOf(false) }
-
-                    if (showDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showDialog = false },
-                            title = { Text("Bild in groß") },
-                            text = {
-                                Image(
-                                    modifier = Modifier
-                                        .padding(4.dp)
-                                        .fillMaxSize(),
-
-                                    //color = Color.Transparent,
-                                    painter = painterResource(id = img),
-                                    contentDescription = "Mein Logo",
-                                )
-                            },
-                            confirmButton = {
-                                TextButton(onClick = { showDialog = false},) {
-                                    Text("OK")
-                                }
-                            }
-                        )
-                    }
-                    TextButton(
-                        onClick = { showDialog = true },
-                        border = BorderStroke(0.dp, Color.Black),
-
-                        modifier = Modifier
-                            .background(Color.Transparent)
-                            .border(BorderStroke(1.dp, Color.Black)),
-                        shape = RectangleShape // oder RoundedCornerShape(0.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .background(Color.Transparent)
-                        ) {
-                            Image(
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .size(100.dp),
-                                //color = Color.Transparent,
-                                painter = painterResource(id = img),
-                                contentDescription = "Mein Logo",
-                            )
-
-                        }
-
-
-                    }
-
-
-                }
-            }
-        }
-    }
-*/
-}
 @Composable
 fun MinimalSnackbar() {/*
     var show by remember { mutableStateOf(false) }
