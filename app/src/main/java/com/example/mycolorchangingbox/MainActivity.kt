@@ -90,6 +90,7 @@ import org.xmlpull.v1.XmlPullParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+
 class MainActivity : ComponentActivity() {
     //DB Instanziieren
     private lateinit var db: MyDatabase
@@ -549,9 +550,48 @@ fun getEventByID(id: Int): Event {
     )
 }
 
+//@Preview
 @Composable
 fun About() {
-    Text("DELETE FROM tickets WHERE id = :id")
+    var stichPunkte = listOf<String>(
+        "MyFestivalApp",
+        "",
+        "Hochschule Harz",
+        "Friedrichstr. 57-59",
+        "38855 Wernigerode ",
+        "uXXXXX@hs-harz.de",
+    )
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(colorResource(R.color.main_background))) {
+        Column(
+            modifier = Modifier.padding(14.dp, top = 30.dp)
+        ) {
+            Text(
+                text = "Über Uns:",
+                modifier = Modifier
+                    .padding(8.dp, bottom = 12.dp),
+                color = colorResource(R.color.secondary_text),
+                fontSize = 38.sp,
+                textAlign = TextAlign.Center,
+
+            )
+            stichPunkte.forEach {
+                    p ->
+                Text(
+                    text = p,
+                    modifier = Modifier
+                        .padding(4.dp),
+                    color = colorResource(R.color.secondary_text),
+                    fontSize = 30.sp,
+
+                    )
+            }
+        }
+    }
+
+
 }
 
 //--------------
