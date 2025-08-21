@@ -64,7 +64,7 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
-    //DB Instanziieren
+    //DB Instanziieren und jeder composable uebergeben die es brauch
     private lateinit var db: MyDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,7 +94,7 @@ data class Event(
     val price: Float
 )
 
-
+//HauptComposable, in die alle weiteren Composables reingeladen werden
 @Composable
 fun MainApp(db: MyDatabase) {
     val navController = rememberNavController()
@@ -117,49 +117,7 @@ fun MainApp(db: MyDatabase) {
     }
 }
 
-//stellt Objekte für Screen/Ansicht bereit
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object MainPage : Screen("myMainPage", "Acts", Icons.Default.Home)
-    object Tickets : Screen("myTickets", "Tickets", Icons.Default.Star)
-    object About : Screen("about", "Über uns", Icons.Default.ThumbUp)
-}
-
-//eigentliche NavBar, wird in MainApp() aufgerufen
-@Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    val items = listOf(
-        Screen.MainPage,
-        Screen.Tickets,
-        Screen.About)
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    NavigationBar(
-        contentColor = colorResource(R.color.secondary_text),//warum macht das nichts??
-        containerColor = colorResource(R.color.background_secondary)
-    ) {
-        items.forEach { screen ->
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        screen.icon,
-                        //modifier = Modifier.background(colorResource(R.color.primary_text)),
-                        contentDescription = screen.title,
-                        tint = colorResource(R.color.secondary_text)) },
-                label = { Text(screen.title, color = colorResource(R.color.secondary_text)) },
-                selected = currentRoute == screen.route,
-                onClick = {
-                    navController.navigate(screen.route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
-    }
-}
-
+//Startseite mit allen Acts, hier koennen Tickets gekauft werden
 @Composable
 fun MyMainPage(db: MyDatabase) {
     val events = remember { mutableListOf<Event>() }
@@ -181,7 +139,7 @@ fun MyMainPage(db: MyDatabase) {
             .fillMaxHeight()
     ) {
         items(events) { event ->
-            var buyTicketDialog by remember { mutableStateOf(false) }
+            var buyTicketDialog by remember { mutableStateOf(false) }//wenn true wird ticketkaufdialog geoeffnet
             if (buyTicketDialog) {
                 AlertDialog(
                     containerColor = colorResource(R.color.background_secondary),
@@ -274,7 +232,7 @@ fun MyMainPage(db: MyDatabase) {
                     painter = painterResource(id = event.iconPath),
                     contentDescription = "MyData",
                 )
-                Text(
+                Text(//nur ein platzhalter
                     text = "k",
                     modifier = Modifier
                         .background(colorResource(R.color.background_primary))
@@ -286,10 +244,7 @@ fun MyMainPage(db: MyDatabase) {
                 )
                 Button(
                     onClick = {
-                        /*GlobalScope.launch {
-                            db.ticketDao().insert(Ticket(eventID = 0, price = 29.99f))
-                        }*/
-                        buyTicketDialog = true
+                        buyTicketDialog = true //bei kauf wird kaufdialog geoeffnet
                     },
                     modifier = Modifier
                         .fillMaxSize()
@@ -310,52 +265,11 @@ fun MyMainPage(db: MyDatabase) {
     }
 }
 
-@Composable
-fun LoadOverlay(
-    isLoading: Boolean,
-    content: @Composable () -> Unit
-) {
-    var dots by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        //solange es laedt werden punkte animiert
-        while (isLoading) {
-            delay(200)
-            if (dots.equals("...")) {
-                dots = ""
-            } else {
-                dots += "."
-            }
-        }
-    }
-    Box(modifier = Modifier.fillMaxSize()) {
-        content()
-
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background((colorResource(R.color.background_primary)).copy(alpha = 0.6f))
-            ) {
-                Text(
-                    textAlign = TextAlign.Center,
-                    text = "Bitte Warten${dots}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 150.dp),
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = colorResource(R.color.primary_text).copy(alpha = 0.9f)
-                )
-            }
-        }
-    }
-}
-
-
+//Ticketseite, hier werden alle gekauften Tickets angeyeigt, sie koennen storniert werden
 @Composable
 fun MyTickets(db: MyDatabase) {
-    var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }//liste gekaufter tickets
+    var isLoading by remember { mutableStateOf(true) }//fuer loadingscreen, wird nach kurzer wartezeit auf false gesetzt
 
     // Tickets automatisch laden wenn Screen erscheint
     LaunchedEffect(Unit) {
@@ -402,7 +316,7 @@ fun MyTickets(db: MyDatabase) {
             ) {
                 items(myTickets) { ticket ->
                     var showStrDialog by remember { mutableStateOf(false) }
-                    if (showStrDialog) {
+                    if (showStrDialog) {//Stornierungsdialog fast analog yu kaufdialog
                         AlertDialog(
                             containerColor = colorResource(R.color.background_secondary),
                             modifier = Modifier.background(colorResource(R.color.background_secondary)),
@@ -506,18 +420,122 @@ fun MyTickets(db: MyDatabase) {
         }
     }
 }
-//./>?<,.|":;'\}{=-
+
+//Uber uns/ About Seite, mit Informationen und Logo
+//@Preview
+@Composable
+fun About() {
+    var stichPunkte = listOf<String>(
+        "MyFestivalApp",
+        "",
+        "Hochschule Harz",
+        "Friedrichstr. 57-59",
+        "38855 Wernigerode ",
+        "uXXXXX@hs-harz.de",
+    )//infoliste
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(colorResource(R.color.main_background))) {
+        Column(
+            modifier = Modifier.padding(14.dp, top = 30.dp)
+        ) {
+            Text(
+                text = "Über Uns:",
+                modifier = Modifier
+                    .padding(8.dp, bottom = 12.dp),
+                color = colorResource(R.color.secondary_text),
+                fontSize = 38.sp,
+                textAlign = TextAlign.Center,
+
+                )
+            stichPunkte.forEach {
+                    p ->
+                Text(
+                    text = p,
+                    modifier = Modifier
+                        .padding(4.dp),
+                    color = colorResource(R.color.secondary_text),
+                    fontSize = 30.sp,
+
+                    )
+            }
+            Image(//logo
+                modifier = Modifier
+                    .padding(0.dp)
+                    .fillMaxSize()
+                    .size(100.dp),
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "MyData",
+            )
+
+        }
+    }
+}
+
+
+
+//-------------Hilfsfunktionen und Datentypen-------------------
+//--------------------------------------------------------------
+//-----Fuer Navigationbar---------------------------------------
+
+//stellt Objekte für Screen/Ansicht bereit
+sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
+    object MainPage : Screen("myMainPage", "Acts", Icons.Default.Home)
+    object Tickets : Screen("myTickets", "Tickets", Icons.Default.Star)
+    object About : Screen("about", "Über uns", Icons.Default.ThumbUp)
+}
+
+//eigentliche NavBar, wird in MainApp() aufgerufen
+@Composable
+fun BottomNavigationBar(navController: NavHostController) {
+    val items = listOf(
+        Screen.MainPage,
+        Screen.Tickets,
+        Screen.About)
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    NavigationBar(
+        contentColor = colorResource(R.color.secondary_text),//warum macht das nichts??
+        containerColor = colorResource(R.color.background_secondary)
+    ) {
+        items.forEach { screen ->
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        screen.icon,
+                        //modifier = Modifier.background(colorResource(R.color.primary_text)),
+                        contentDescription = screen.title,
+                        tint = colorResource(R.color.secondary_text)) },
+                label = { Text(screen.title, color = colorResource(R.color.secondary_text)) },
+                selected = currentRoute == screen.route,
+                onClick = {
+                    navController.navigate(screen.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+    }
+}
+
+//--------------------------------------------------------------
+//-----Fuer Datenbanklogik--------------------------------------
+
 //Eintrag in Datenbank (ein Ticket)
 @Entity(tableName = "tickets")
 data class Ticket(
-    @PrimaryKey(autoGenerate = true) val id: Long =0,
+    @PrimaryKey(autoGenerate = true) val id: Long =0,//primaerschluessel
     val eventID: Int,
     val price: Float
 )
 
-//Funktionen für Datenbanknutzung
+//Funktionen für Datenbanknutzung/Queries fuer DB
 @Dao
-interface TicketDao {
+interface TicketDao {//einyelne funktionen sollten selbsterklaerend sein
     @Insert
     suspend fun insert(ticket: Ticket): Long
 
@@ -537,6 +555,10 @@ abstract class MyDatabase: RoomDatabase() {
     abstract fun ticketDao(): TicketDao
 }
 
+//--------------------------------------------------------------
+//-----Fuer Events----------------------------------------------
+
+//alle intern gespeicherten Events kommen von hier
 fun getEvents(): List<Event> {
     val events = mutableListOf<Event>()
     events.add( Event(
@@ -552,21 +574,46 @@ fun getEvents(): List<Event> {
     ))
     events.add( Event(
         title = "RoggnRoller Jonny",
-        date = "23.11.2025",
+        date = "22.11.2025",
         time = "19:00",
         description = "The new era of Rock'n Roll",
-        genre = "Rock",
+        genre = "Rock'n Roll",
         stage = 1,
         iconPath = R.drawable.b7,
         id = 1,
         price = 29.99f
     ))
+    events.add( Event(
+        title = "Gleichstrom/Wechselstrom",
+        date = "23.11.2025",
+        time = "19:00",
+        description = "Elektrisierende Gitarren und krasser Abriss!!!",
+        genre = "Rock'n Roll",
+        stage = 1,
+        iconPath = R.drawable.b2,
+        id = 1,
+        price = 44.99f
+    ))
+    events.add( Event(
+        title = "Die Ratten",
+        date = "23.11.2025",
+        time = "20:45",
+        description = "Wenn das Bier nicht mehr schmeckt ist das Leben im Eimer...",
+        genre = "Punkrock",
+        stage = 3,
+        iconPath = R.drawable.b9,
+        id = 1,
+        price = 44.99f
+    ))
     return events
 }
+
+//Tickets speichern eventid -> findet passendes event fuer ein ticket
 fun getEventByID(id: Int): Event {
     for (event in getEvents()) {
         if (event.id.equals(id)) return event
     }
+    //leeres Event wenn keins gefunden (von IDE so vorgeschlagen)
     return Event(
         title = TODO(),
         date = TODO(),
@@ -580,73 +627,49 @@ fun getEventByID(id: Int): Event {
     )
 }
 
-//@Preview
+//--------------------------------------------------------------
+//-----Fuer Composables-----------------------------------------
+
+//Ladescreen fuer Ticketseite ist an/aus je nach boolean isloading
 @Composable
-fun About() {
-    var stichPunkte = listOf<String>(
-        "MyFestivalApp",
-        "",
-        "Hochschule Harz",
-        "Friedrichstr. 57-59",
-        "38855 Wernigerode ",
-        "uXXXXX@hs-harz.de",
-    )
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(colorResource(R.color.main_background))) {
-        Column(
-            modifier = Modifier.padding(14.dp, top = 30.dp)
-        ) {
-            Text(
-                text = "Über Uns:",
-                modifier = Modifier
-                    .padding(8.dp, bottom = 12.dp),
-                color = colorResource(R.color.secondary_text),
-                fontSize = 38.sp,
-                textAlign = TextAlign.Center,
-
-            )
-            stichPunkte.forEach {
-                    p ->
-                Text(
-                    text = p,
-                    modifier = Modifier
-                        .padding(4.dp),
-                    color = colorResource(R.color.secondary_text),
-                    fontSize = 30.sp,
-
-                    )
+fun LoadOverlay(
+    isLoading: Boolean,
+    content: @Composable () -> Unit
+) {
+    var dots by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        //solange es laedt werden punkte animiert
+        while (isLoading) {
+            delay(200)
+            if (dots.equals("...")) {
+                dots = ""
+            } else {
+                dots += "."
             }
-            Image(
-                modifier = Modifier
-                    .padding(0.dp)
-                    .fillMaxSize()
-                    .size(100.dp),
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "MyData",
-            )
+        }//eigene animation
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
 
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background((colorResource(R.color.background_primary)).copy(alpha = 0.6f))//halbtransparent machen
+            ) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = "Bitte Warten${dots}",//hier wird animation eingefuegt
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 150.dp),
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colorResource(R.color.primary_text).copy(alpha = 0.9f)
+                )
+            }
         }
     }
 }
 
-//--------------
-@Composable
-fun MinimalSnackbar() {/*
-    var show by remember { mutableStateOf(false) }
 
-    Column {
-        Button(onClick = { show = true }) {
-            Text("Zeige Nachricht")
-        }
-
-        if (show) {
-            LaunchedEffect(Unit) {
-                delay(1500)
-                show = false
-            }
-            Snackbar { Text("Fertig!") }
-        }
-    }*/
-}
