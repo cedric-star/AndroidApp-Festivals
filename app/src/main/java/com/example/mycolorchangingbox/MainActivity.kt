@@ -342,6 +342,8 @@ fun MyMainPage(db: MyDatabase) {
 @Composable
 fun MyTickets(db: MyDatabase) {
     var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }
+    var showSbar by remember { mutableStateOf(false) }
+
 
     // Tickets automatisch laden wenn Screen erscheint
     LaunchedEffect(Unit) {
@@ -351,22 +353,44 @@ fun MyTickets(db: MyDatabase) {
         .fillMaxSize()
         .background(colorResource(R.color.main_background))) {
 
-        Text(
-            textAlign = TextAlign.Center,
-            text = "Meine Tickets",
-            modifier = Modifier
-                .background(colorResource(R.color.main_background))
-                .fillMaxWidth()
-                .padding(top = 10.dp),
-            fontSize = 50.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = colorResource(R.color.secondary_text)
-        )
+        if (showSbar) {
+            LaunchedEffect(Unit) {
+                delay(1500)
+                showSbar = false
+            }
+            Snackbar { Text("Fertig!") }
+        }
+
+        if (myTickets.isEmpty()) {
+            Text(
+                textAlign = TextAlign.Center,
+                text = "Noch Keine Tickets vorhanden",
+                modifier = Modifier
+                    .background(colorResource(R.color.main_background))
+                    .fillMaxWidth()
+                    .padding(top = 100.dp),
+                fontSize = 30.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colorResource(R.color.secondary_text)
+            )
+        } else {
+            Text(
+                textAlign = TextAlign.Center,
+                text = "Meine Tickets",
+                modifier = Modifier
+                    .background(colorResource(R.color.main_background))
+                    .fillMaxWidth()
+                    .padding(top = 30.dp),
+                fontSize = 50.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colorResource(R.color.secondary_text)
+            )
+        }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 80.dp)
+                .padding(top = 100.dp)
         ) {
             items(myTickets) { ticket ->
                 var showStrDialog by remember { mutableStateOf(false) }
@@ -397,10 +421,6 @@ fun MyTickets(db: MyDatabase) {
                                 )
                             }
                         },
-
-
-
-
                         confirmButton = {
                             TextButton(
                                 onClick = {
@@ -462,6 +482,7 @@ fun MyTickets(db: MyDatabase) {
                             GlobalScope.launch {
                                 showStrDialog = true
                                 myTickets = db.ticketDao().getAll()
+                                showSbar = true
                             }
                         }
                     ) {
@@ -474,6 +495,7 @@ fun MyTickets(db: MyDatabase) {
                 }
             }
         }
+
     }
 }
 //./>?<,.|":;'\}{=-
@@ -590,8 +612,6 @@ fun About() {
             }
         }
     }
-
-
 }
 
 //--------------
