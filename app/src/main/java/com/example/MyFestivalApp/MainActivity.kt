@@ -603,7 +603,7 @@ fun getEvents(): List<Event> {
         stage = 3,
         iconPath = R.drawable.b9,
         id = 1,
-        price = 44.99f
+        price = 4.99f
     ))
     return events
 }
