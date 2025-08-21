@@ -8,6 +8,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.ColorRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,6 +34,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -51,6 +59,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MovableContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +73,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -338,164 +348,202 @@ fun MyMainPage(db: MyDatabase) {
     }
 }
 
+@Composable
+fun LoadOverlay(
+    isLoading: Boolean,
+    content: @Composable () -> Unit
+) {
+    var dot1 = "."
+    var dot2 = ".."
+    var dot3 = "..."
+    var dots by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        delay(300)
+        dots = dot1
+        delay(300)
+        dots = dot2
+        delay(300)
+        dots = dot3
+        delay(300)
+        dots = ""
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background((colorResource(R.color.background_primary)).copy(alpha = 0.6f))
+            ) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = "Bitte Warten${dots}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 150.dp),
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colorResource(R.color.primary_text).copy(alpha = 0.9f)
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 fun MyTickets(db: MyDatabase) {
     var myTickets by remember { mutableStateOf<List<Ticket>>(emptyList()) }
-    var showSbar by remember { mutableStateOf(false) }
-
+    var isLoading by remember { mutableStateOf(true) }
 
     // Tickets automatisch laden wenn Screen erscheint
     LaunchedEffect(Unit) {
+        delay(2000)
         myTickets = db.ticketDao().getAll()
+        isLoading = false
     }
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(colorResource(R.color.main_background))) {
-
-        if (showSbar) {
-            LaunchedEffect(Unit) {
-                delay(1500)
-                showSbar = false
-            }
-            Snackbar { Text("Fertig!") }
-        }
-
-        if (myTickets.isEmpty()) {
-            Text(
-                textAlign = TextAlign.Center,
-                text = "Noch Keine Tickets vorhanden",
-                modifier = Modifier
-                    .background(colorResource(R.color.main_background))
-                    .fillMaxWidth()
-                    .padding(top = 100.dp),
-                fontSize = 30.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = colorResource(R.color.secondary_text)
-            )
-        } else {
-            Text(
-                textAlign = TextAlign.Center,
-                text = "Meine Tickets",
-                modifier = Modifier
-                    .background(colorResource(R.color.main_background))
-                    .fillMaxWidth()
-                    .padding(top = 30.dp),
-                fontSize = 50.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = colorResource(R.color.secondary_text)
-            )
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 100.dp)
-        ) {
-            items(myTickets) { ticket ->
-                var showStrDialog by remember { mutableStateOf(false) }
-                if (showStrDialog) {
-                    AlertDialog(
-                        containerColor = colorResource(R.color.background_secondary),
-                        modifier = Modifier.background(colorResource(R.color.background_secondary)),
-                        onDismissRequest = { showStrDialog = false },
-                        title = { Text(
-                            "Ticket Stornieren!",
-                            color = colorResource(R.color.secondary_text),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 30.sp,
-                            modifier = Modifier.background(colorResource(R.color.background_secondary)),
-
-                            ) },
-
-                        text = {
-                            Column {
-                                val evt = getEventByID(ticket.eventID)
-                                Text(
-                                    text = "Wollen sie wirklich das Ticket zum Auftritt von ${evt.title} stornieren?" +
-                                            "\nSie erhalten ${ticket.price}",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colorResource(R.color.secondary_text),
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    GlobalScope.launch {
-                                        db.ticketDao().deleteByID(ticket.id)
-                                        myTickets = db.ticketDao().getAll()
-                                    }
-                                    showStrDialog = false
-
-                                }
-                            )
-                            {
-                                Text("Stornieren")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = {showStrDialog = false}) {
-                                Text("Abbrechen")
-                            }
-                        }
+    LoadOverlay(isLoading = isLoading) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(R.color.main_background))) {
 
 
-                    )
-                }
-                Card(
+            if (myTickets.isEmpty()) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = "Noch Keine Tickets vorhanden",
                     modifier = Modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(),
+                        .background(colorResource(R.color.main_background))
+                        .fillMaxWidth()
+                        .padding(top = 100.dp),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.secondary_text)
+                )
+            } else {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = "Meine Tickets",
+                    modifier = Modifier
+                        .background(colorResource(R.color.main_background))
+                        .fillMaxWidth()
+                        .padding(top = 30.dp),
+                    fontSize = 50.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.secondary_text)
+                )
+            }
 
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    val event = getEventByID(ticket.eventID)
-                    Text(
-                        text = event.title.toString(),
-                        modifier = Modifier
-                            .background(colorResource(R.color.background_primary))
-                            .padding(18.dp)
-                            .fillMaxSize(),
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorResource(R.color.primary_text)
-                    )
-                    Text(
-                        text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
-                        modifier = Modifier
-                            .background(colorResource(R.color.background_primary))
-                            .padding(18.dp)
-                            .fillMaxSize(),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colorResource(R.color.primary_text)
-                    )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 100.dp)
+            ) {
+                items(myTickets) { ticket ->
+                    var showStrDialog by remember { mutableStateOf(false) }
+                    if (showStrDialog) {
+                        AlertDialog(
+                            containerColor = colorResource(R.color.background_secondary),
+                            modifier = Modifier.background(colorResource(R.color.background_secondary)),
+                            onDismissRequest = { showStrDialog = false },
+                            title = { Text(
+                                "Ticket Stornieren!",
+                                color = colorResource(R.color.secondary_text),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 30.sp,
+                                modifier = Modifier.background(colorResource(R.color.background_secondary)),
 
-                    TextButton(
-                        modifier = Modifier.fillMaxWidth().background(colorResource(R.color.background_secondary)),
-                        onClick = {
-                            GlobalScope.launch {
-                                showStrDialog = true
-                                myTickets = db.ticketDao().getAll()
-                                showSbar = true
+                                ) },
+
+                            text = {
+                                Column {
+                                    val evt = getEventByID(ticket.eventID)
+                                    Text(
+                                        text = "Wollen sie wirklich das Ticket zum Auftritt von ${evt.title} stornieren?" +
+                                                "\nSie erhalten ${ticket.price}",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colorResource(R.color.secondary_text),
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        GlobalScope.launch {
+                                            db.ticketDao().deleteByID(ticket.id)
+                                            myTickets = db.ticketDao().getAll()
+                                        }
+                                        showStrDialog = false
+
+                                    }
+                                )
+                                {
+                                    Text("Stornieren")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = {showStrDialog = false}) {
+                                    Text("Abbrechen")
+                                }
                             }
-                        }
-                    ) {
-                        Text("Stornieren",
-                            color = colorResource(R.color.primary_text),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 30.sp)
-                    }
 
+
+                        )
+                    }
+                    Card(
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        val event = getEventByID(ticket.eventID)
+                        Text(
+                            text = event.title.toString(),
+                            modifier = Modifier
+                                .background(colorResource(R.color.background_primary))
+                                .padding(18.dp)
+                                .fillMaxSize(),
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.primary_text)
+                        )
+                        Text(
+                            text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
+                            modifier = Modifier
+                                .background(colorResource(R.color.background_primary))
+                                .padding(18.dp)
+                                .fillMaxSize(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.primary_text)
+                        )
+
+                        TextButton(
+                            modifier = Modifier.fillMaxWidth().background(colorResource(R.color.background_secondary)),
+                            onClick = {
+                                GlobalScope.launch {
+                                    showStrDialog = true
+                                    myTickets = db.ticketDao().getAll()
+                                }
+                            }
+                        ) {
+                            Text("Stornieren",
+                                color = colorResource(R.color.primary_text),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 30.sp)
+                        }
+
+                    }
                 }
             }
-        }
 
+        }
     }
 }
 //./>?<,.|":;'\}{=-
