@@ -671,5 +671,3 @@ fun LoadOverlay(
         }
     }
 }
-
-
