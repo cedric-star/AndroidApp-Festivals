@@ -353,19 +353,17 @@ fun LoadOverlay(
     isLoading: Boolean,
     content: @Composable () -> Unit
 ) {
-    var dot1 = "."
-    var dot2 = ".."
-    var dot3 = "..."
     var dots by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        delay(300)
-        dots = dot1
-        delay(300)
-        dots = dot2
-        delay(300)
-        dots = dot3
-        delay(300)
-        dots = ""
+        //solange es laedt werden punkte animiert
+        while (isLoading) {
+            delay(200)
+            if (dots.equals("...")) {
+                dots = ""
+            } else {
+                dots += "."
+            }
+        }
     }
     Box(modifier = Modifier.fillMaxSize()) {
         content()
@@ -399,7 +397,7 @@ fun MyTickets(db: MyDatabase) {
 
     // Tickets automatisch laden wenn Screen erscheint
     LaunchedEffect(Unit) {
-        delay(2000)
+        delay(1500)
         myTickets = db.ticketDao().getAll()
         isLoading = false
     }
@@ -658,6 +656,15 @@ fun About() {
 
                     )
             }
+            Image(
+                modifier = Modifier
+                    .padding(0.dp)
+                    .fillMaxSize()
+                    .size(100.dp),
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "MyData",
+            )
+
         }
     }
 }
