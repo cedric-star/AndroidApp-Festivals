@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mycolorchangingbox"
+    namespace = "com.example.MyFestivalApp"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.mycolorchangingbox"
+        applicationId = "com.example.MyFestivalApp"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

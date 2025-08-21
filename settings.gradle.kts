@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MyColorChangingBox"
+rootProject.name = "MyFestivalApp"
 include(":app")
  
