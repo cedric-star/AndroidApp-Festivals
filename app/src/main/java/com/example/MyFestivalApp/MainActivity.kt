@@ -591,7 +591,7 @@ fun getEvents(): List<Event> {
         genre = "Rock'n Roll",
         stage = 1,
         iconPath = R.drawable.b2,
-        id = 1,
+        id = 2,
         price = 44.99f
     ))
     events.add( Event(
@@ -602,7 +602,7 @@ fun getEvents(): List<Event> {
         genre = "Punkrock",
         stage = 3,
         iconPath = R.drawable.b9,
-        id = 1,
+        id = 3,
         price = 4.99f
     ))
     return events
