@@ -388,7 +388,7 @@ fun MyTickets(db: MyDatabase) {
                             color = colorResource(R.color.primary_text)
                         )
                         Text(
-                            text = "when? "+event.date+", "+event.time+" Uhr\nwo? "+event.stage+"\nwas? "+event.genre+"\n"+event.description,
+                            text = "Wann? "+event.date+", "+event.time+" Uhr\nWo? Stage"+event.stage+"\nGenre? "+event.genre+"\n"+event.description,
                             modifier = Modifier
                                 .background(colorResource(R.color.background_primary))
                                 .padding(18.dp)
