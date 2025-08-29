@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
@@ -483,7 +484,7 @@ fun About() {
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object MainPage : Screen("myMainPage", "Acts", Icons.Default.Home)
     object Tickets : Screen("myTickets", "Tickets", Icons.Default.Star)
-    object About : Screen("about", "Über uns", Icons.Default.ThumbUp)
+    object About : Screen("about", "Über uns", Icons.Default.Info)
 }
 
 //eigentliche NavBar, wird in MainApp() aufgerufen
